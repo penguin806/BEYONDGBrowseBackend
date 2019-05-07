@@ -4,7 +4,8 @@
 
 ProteinQuery::ProteinQuery()
 {
-    this->serverAddrress = "server-hk1.xuefeng.space";
+    //this->serverAddrress = "server-hk1.xuefeng.space";
+    this->serverAddrress = "172.25.176.243";
     this->databaseName = "snow_db201905";
     this->username = "snow_db201905";
     this->password = "201905";

@@ -38,11 +38,11 @@ int main(int argc, char *argv[])
 
     if(listenPort == -1)
     {
-        qDebug() << QString("Could not run on http://0.0.0.1:%1/").arg(listenPort);
+        qDebug() << QString("Could not run on http://0.0.0.0:%1/").arg(listenPort);
                 return 0;
     }
     else {
-        qDebug() << QString("Running on http://0.0.0.1:%1/ (Press CTRL+C to quit)").arg(listenPort);
+        qDebug() << QString("Running on http://0.0.0.0:%1/ (Press CTRL+C to quit)").arg(listenPort);
     }
 
 
