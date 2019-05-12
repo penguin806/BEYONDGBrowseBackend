@@ -30,6 +30,10 @@ int main(int argc, char *argv[])
                     proteinName,posList.at(0),posList.at(1));
         qDebug() << "Database query result:" << result;
 
+        if(result.isEmpty())
+        {
+            return QString("Not Found");
+        }
         return result;
     });
 
