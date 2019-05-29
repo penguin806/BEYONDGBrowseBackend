@@ -90,31 +90,77 @@ QString ProteinQuery::queryProteinUniprotId(QString name, QString posStart, QStr
 //    QString queryString = QString("SELECT DISTINCT `name`, `start`, `end`, `uniprot_id`, `Scan(s)`, `proteoform` FROM `protein_test`, `protein_sequence` WHERE protein_test.name = '%1' AND protein_test.start < %2 AND protein_test.end > %3 AND protein_test.uniprot_id = protein_sequence.`Protein accession` ")
 //            .arg(name,posStart,posEnd);
 
+//  2019-05-30 SQL:
+//
+//    SELECT
+//        `uniprot_id`,
+//        `Scan(s)`,
+//        `proteoform`
+//    FROM
+//        (
+//        SELECT DISTINCT
+//            `uniprot_id`
+//        FROM
+//            (
+//            SELECT
+//                `name`,
+//                `start`,
+//                `end`,
+//                `uniprot_id`
+//            FROM
+//                `protein_annotation`
+//            WHERE
+//                (
+//                    `name` = 'chr7' AND `start` >= '70000000' AND `end` <= '80000000'
+//                ) OR(
+//                    `name` = 'chr7' AND `start` < '70000000' AND `end` > '70000000'
+//                ) OR(
+//                    `name` = 'chr7' AND `start` < '80000000' AND `end` > '80000000'
+//                ) OR(
+//                    `name` = 'chr7' AND `start` < '70000000' AND `end` > '80000000'
+//                )
+//        ) AS `ID_LIST`
+//    ) AS `RESULT`,
+//    `protein_sequence`
+//    WHERE
+//        `RESULT`.`uniprot_id` = `protein_sequence`.`Protein accession`
+
     QString queryString = QString(
-        "SELECT DISTINCT\
-            `name`,\
-            `start`,\
-            `end`,\
-            `uniprot_id`,\
-            `Scan(s)`,\
-            `proteoform`\
-        FROM\
-            (\
-            SELECT\
-                `name`,\
-                `start`,\
-                `end`,\
+        "SELECT\
                 `uniprot_id`,\
-                COUNT(DISTINCT `uniprot_id`)\
+                `Scan(s)`,\
+                `proteoform`\
             FROM\
-                `protein_test`\
+                (\
+                SELECT DISTINCT\
+                    `uniprot_id`\
+                FROM\
+                    (\
+                    SELECT\
+                        `name`,\
+                        `start`,\
+                        `end`,\
+                        `uniprot_id`\
+                    FROM\
+                        `protein_annotation`\
+                    WHERE\
+                        (\
+                            `name` = '%1' AND `start` >= '%2' AND `end` <= '%3'\
+                        ) OR(\
+                            `name` = '%1' AND `start` < '%2' AND `end` > '%2'\
+                        ) OR(\
+                            `name` = '%1' AND `start` < '%3' AND `end` > '%3'\
+                        ) OR(\
+                            `name` = '%1' AND `start` < '%2' AND `end` > '%3'\
+                        )\
+                ) AS `ID_LIST`\
+            ) AS `RESULT`,\
+            `protein_sequence`\
             WHERE\
-                `name` = '%1' AND `start` < '%2' AND `end` > '%3'\
-        ) AS `protein_info`,\
-        `protein_sequence`\
-        WHERE\
-            `uniprot_id` = `Protein accession`"
-    ).arg(name, posStart, posEnd);
+                `RESULT`.`uniprot_id` = `protein_sequence`.`Protein accession`"
+    ).arg(
+                name, posStart, posEnd
+         );
 
     qDebug() << "Query: " + queryString;
     query.exec(queryString);
@@ -131,6 +177,7 @@ QString ProteinQuery::queryProteinUniprotId(QString name, QString posStart, QStr
                 query.value(5).toString() + '\n';
         proteinSequences += query.value(5).toString().toStdString();
     }
+
 
     //string sequenceToMap = "AARKSAPATGGVKKPHYRPGTVAL";
     string sequenceToMap = "(EIRRYQKSTELLIRKLPFQRLVREIAQDFKTDLRFQSSAV)[Methyl]MALQEASEAYLVGLFEDTNLCAIHAKRVTIMPKDI";
