@@ -7,6 +7,9 @@ ProteinQuery query;
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+    QCoreApplication::setApplicationName("SnowPluginBackend");
+    QCoreApplication::setApplicationVersion("0.1.0");
+    QCoreApplication::setOrganizationDomain("xuefeng.space");
 
     qDebug() << "Connecting to database...";
     if( !query.connectToDataBase() )
@@ -28,7 +31,7 @@ int main(int argc, char *argv[])
         }
         QString result = query.queryProteinUniprotId(
                     proteinName,posList.at(0),posList.at(1));
-        qDebug() << "Database query result:" << result;
+        qDebug() << "Database query result:" << result.left(10);
 
         if(result.isEmpty())
         {

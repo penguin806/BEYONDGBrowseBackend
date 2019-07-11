@@ -8,10 +8,10 @@
 ProteinQuery::ProteinQuery()
 {
     //this->serverAddrress = "server-hk1.xuefeng.space";
-    this->serverAddrress = "172.25.176.243";
+    this->serverAddrress = "localhost";
     this->databaseName = "snow_db201905";
     this->username = "snow_db201905";
-    this->password = "201905";
+    this->password = "snow_db201905";
 }
 
 bool ProteinQuery::connectToDataBase()
@@ -24,8 +24,6 @@ bool ProteinQuery::connectToDataBase()
     return this->proteinDB.open();
 }
 
-//#include <iostream>
-//using namespace std;
 //int longestCommonSubstring_n2_n2(const string& str1, const string& str2)
 //{
 //    size_t size1 = str1.size();
@@ -93,6 +91,44 @@ QString ProteinQuery::queryProteinUniprotId(QString name, QString posStart, QStr
 //    QString queryString = QString("SELECT DISTINCT `name`, `start`, `end`, `uniprot_id`, `Scan(s)`, `proteoform` FROM `protein_test`, `protein_sequence` WHERE protein_test.name = '%1' AND protein_test.start < %2 AND protein_test.end > %3 AND protein_test.uniprot_id = protein_sequence.`Protein accession` ")
 //            .arg(name,posStart,posEnd);
 
+// 2019-07-11 SQL:
+// SELECT
+//     `start`,
+//     `end`,
+//     `uniprot_id`,
+//     `Scan(s)`,
+//     `ions`,
+//     `proteoform`
+// FROM
+//     (
+//     SELECT
+//         `start`,
+//         `end`,
+//         `uniprot_id`
+//     FROM
+//         `protein_annotation`
+//     WHERE
+//         (
+//             `name` = 'chr1' AND `start` >= '1' AND `end` <= '600000000'
+//         ) OR(
+//             `name` = 'chr1' AND `start` < '1' AND `end` > '1'
+//         ) OR(
+//             `name` = 'chr1' AND `start` < '600000000' AND `end` > '600000000'
+//         ) OR(
+//             `name` = 'chr1' AND `start` < '1' AND `end` > '600000000'
+//         )
+//     GROUP BY
+//         `uniprot_id`
+// ) AS `id_list`,
+// `protein_sequence`,
+// `protein_scan`
+// WHERE
+//     `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`
+// ORDER BY
+//     `start`,
+//     `Scan(s)`
+
+
 //  2019-06-03 SQL:
 //
 //    SELECT
@@ -129,6 +165,18 @@ QString ProteinQuery::queryProteinUniprotId(QString name, QString posStart, QStr
 //        `start`,
 //        `Scan(s)`
 
+// Test Query Result:
+// start        end         uniprot_id	Scan(s) proteoform
+// 149813271 	149813681 	H32_HUMAN 	912 	A.TKAARKSAPATGGVKKPHRYRPGTVALREIRRYQKST(ELLIRKLPFQ...
+// 149813271 	149813681 	H32_HUMAN 	952 	T.(KQTARKSTGGKAPRKQLATKAARKSAPATGGVKKPH)[Phospho;P...
+// 149813271 	149813681 	H32_HUMAN 	956 	T.(KQTARKSTGGKAPRK)[Phospho](QLATKAARKSAPATGGVKKPH...
+// 149813271 	149813681 	H32_HUMAN 	962 	R.(TKQTARK)[Dimethyl;Acetyl]STGGKAPRKQLAT(KAAR)[Ac...
+// 149813271 	149813681 	H32_HUMAN 	978 	R.(TKQTARKSTGGKA)[Methyl;Acetyl;Acetyl]PRKQLATKAAR...
+// 149813271 	149813681 	H32_HUMAN 	998 	M.ARTKQTARKSTGGKAPRKQLATKAARK(SAPATGGVK)[Dimethyl]...
+// 149813271 	149813681 	H32_HUMAN 	1020 	R.(TKQTARKSTGGKAPRKQLATKAARKSAPATGGVKKPHRYRPGT)[Ac...
+// 149813271 	149813681 	H32_HUMAN 	1036 	A.(RTKQTARKSTGGKAPRKQLATKAARKSAPATG)[Acetyl]GVKKPH...
+// 149813271 	149813681 	H32_HUMAN 	1041 	M.ARTKQTA(RKSTG)[Acetyl](GKAPRK)[Acetyl]QLAT(KAARK...
+
     QString queryString = QString(
 "\
 SELECT\
@@ -136,6 +184,7 @@ SELECT\
     `end`,\
     `uniprot_id`,\
     `Scan(s)`,\
+    `ions`,\
     `proteoform`\
 FROM\
     (\
@@ -158,9 +207,10 @@ FROM\
     GROUP BY\
         `uniprot_id`\
 ) AS `id_list`,\
-`protein_sequence`\
+`protein_sequence`,\
+`protein_scan` \
 WHERE\
-    `uniprot_id` = `Protein accession`\
+    `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`\
 ORDER BY\
     `start`,\
     `Scan(s)`\
@@ -169,43 +219,35 @@ ORDER BY\
                 name, posStart, posEnd
          );
 
-    qDebug() << "Query: " + queryString;
-    query.exec(queryString);
 
-//    QString result;
+    bool bQueryResult = query.exec(queryString);
+    qDebug() << "Query: " << name << posStart << posEnd << bQueryResult;
+
     QJsonArray recordArray;
-//    string proteinSequences;
     while(query.next())
     {
         QJsonObject oneLineRecord;
-        oneLineRecord.insert("_start",query.value(0).toString());
-        oneLineRecord.insert("end",query.value(1).toString());
-        oneLineRecord.insert("uniprot_id",query.value(2).toString());
-        oneLineRecord.insert("scanId",query.value(3).toString());
-        oneLineRecord.insert("sequence",query.value(4).toString());
+        oneLineRecord.insert("_start",query.value("start").toString());
+        oneLineRecord.insert("end",query.value("end").toString());
+        oneLineRecord.insert("uniprot_id",query.value("uniprot_id").toString());
+        oneLineRecord.insert("scanId",query.value("Scan(s)").toString());
+        oneLineRecord.insert("sequence",query.value("proteoform").toString());
+
+        // Convert 3891.12898~4335.73;3990.18703~1990.40;  =>  [3891.12898, 3990.18703], [4335.73, 1990.40]
+        QStringList ionsList = query.value("ions").toString().split(';',QString::SkipEmptyParts);
+        QJsonArray arrMSScanMassArray;
+        QJsonArray arrMSScanPeakAundance;
+        for (QString ionsItem : ionsList) {
+            QStringList massAndPeak = ionsItem.split('~', QString::SkipEmptyParts);
+            arrMSScanMassArray.append(massAndPeak.at(0));
+            arrMSScanPeakAundance.append(massAndPeak.at(1));
+        }
+        oneLineRecord.insert("arrMSScanMassArray", arrMSScanMassArray);
+        oneLineRecord.insert("arrMSScanPeakAundance", arrMSScanPeakAundance);
+
         recordArray.push_back(oneLineRecord);
-
-//        result = result + query.value(0).toString() + '\t' +
-//                query.value(1).toString() + '\t' +
-//                query.value(2).toString() + '\t' +
-//                query.value(3).toString() + '\t' +
-//                query.value(4).toString() + '\t' +
-//                query.value(5).toString() + '\n';
-
-//        proteinSequences += query.value(5).toString().toStdString();
     }
 
     QJsonDocument jsonDocument(recordArray);
-    return QString(jsonDocument.toJson());
-
-//    //string sequenceToMap = "AARKSAPATGGVKKPHYRPGTVAL";
-//    string sequenceToMap = "(EIRRYQKSTELLIRKLPFQRLVREIAQDFKTDLRFQSSAV)[Methyl]MALQEASEAYLVGLFEDTNLCAIHAKRVTIMPKDI";
-//    qDebug() << "\n\n\n" << "proteinSequences: ";
-//    cout  << proteinSequences << "\n\n\n" << sequenceToMap << "\n\n\n" ;
-//    qDebug() << "\n\n\n" <<
-//                    longestCommonSubstring_n2_n2(proteinSequences, sequenceToMap)
-//            << "\n\n\n";
-
-//    return result;
+    return QString(jsonDocument.toJson(QJsonDocument::Indented));
 }
-
