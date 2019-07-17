@@ -23,25 +23,40 @@ int main(int argc, char *argv[])
         return "SnowTest20190507!";
     });
 
-    snowHttpServer.route("/<arg>/<arg>/uniprot_id", [](QString proteinName, QString position){
+    snowHttpServer.route("/ref/<arg>/<arg>", [](QString proteinName, QString position){
         QStringList posList = position.split("..");
         if(posList.size() != 2)
         {
-            return QString();
+            return QString("ERROR_QUERY_ARGUMENT_INVALID");
         }
-        QString result = query.queryProteinUniprotId(
+        QString result = query.queryProteinByReferenceSequenceRegion(
                     proteinName,posList.at(0),posList.at(1));
         qDebug() << "Database query result:" << result.left(10);
 
         if(result.isEmpty())
         {
-            return QString("Not Found");
+            return QString("ERROR_NOT_FOUND");
+        }
+        return result;
+    });
+
+    snowHttpServer.route("/locate/<arg>", [](QString proteinName){
+        if(proteinName.isEmpty())
+        {
+            return QString("ERROR_QUERY_ARGUMENT_INVALID");
+        }
+        QString result = query.queryRegionByProteinId(proteinName);
+        qDebug() << "Database query result:" << result.left(10);
+
+        if(result.isEmpty())
+        {
+            return QString("ERROR_NOT_FOUND");
         }
         return result;
     });
 
     const int listenPort =
-            snowHttpServer.listen(QHostAddress::Any,12345);
+            snowHttpServer.listen(QHostAddress::Any,12080);
 
     if(listenPort == -1)
     {

@@ -82,7 +82,7 @@ bool ProteinQuery::connectToDataBase()
 //}
 
 
-QString ProteinQuery::queryProteinUniprotId(QString name, QString posStart, QString posEnd)
+QString ProteinQuery::queryProteinByReferenceSequenceRegion(QString name, QString posStart, QString posEnd)
 {
     QSqlQuery query;
 //    query.exec(
@@ -244,6 +244,32 @@ ORDER BY\
         }
         oneLineRecord.insert("arrMSScanMassArray", arrMSScanMassArray);
         oneLineRecord.insert("arrMSScanPeakAundance", arrMSScanPeakAundance);
+
+        recordArray.push_back(oneLineRecord);
+    }
+
+    QJsonDocument jsonDocument(recordArray);
+    return QString(jsonDocument.toJson(QJsonDocument::Indented));
+}
+
+QString ProteinQuery::queryRegionByProteinId(QString proteinName)
+{
+    QSqlQuery query;
+    // SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = 'ENSP00000000233'
+    QString queryString =
+            QString("SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = '%1' OR `uniprot_id` = '%1'")
+            .arg(proteinName);
+
+    bool bQueryResult = query.exec(queryString);
+    qDebug() << "Query: " << proteinName << bQueryResult;
+
+    QJsonArray recordArray;
+    while(query.next())
+    {
+        QJsonObject oneLineRecord;
+        oneLineRecord.insert("name",query.value("name").toString());
+        oneLineRecord.insert("_start",query.value("start").toString());
+        oneLineRecord.insert("end",query.value("end").toString());
 
         recordArray.push_back(oneLineRecord);
     }

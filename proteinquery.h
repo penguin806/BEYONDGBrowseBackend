@@ -9,7 +9,8 @@ class ProteinQuery
 public:
     ProteinQuery();
     bool connectToDataBase();
-    QString queryProteinUniprotId(QString name, QString posStart, QString posEnd);
+    QString queryProteinByReferenceSequenceRegion(QString name, QString posStart, QString posEnd);
+    QString queryRegionByProteinId(QString proteinName);
 
 private:
     QString serverAddrress;
