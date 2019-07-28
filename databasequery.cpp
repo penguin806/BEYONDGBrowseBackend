@@ -149,7 +149,7 @@ ORDER BY\
 
     bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] queryProteinByReferenceSequenceRegion: "
-             << name << posStart << posEnd << bQueryResult;
+             << name << posStart << posEnd << bQueryResult << query.size();
 
     QJsonArray recordArray;
     while(query.next())
@@ -183,7 +183,12 @@ ORDER BY\
 
 QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 {
-    QSqlQuery query;
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+    QSqlQuery query(this->databaseConnection);
+
     // SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = 'ENSP00000000233'
     QString queryString =
             QString("SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = '%1' OR `uniprot_id` = '%1'")
@@ -191,7 +196,7 @@ QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 
     bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] queryRegionByProteinId: "
-             << proteinName << bQueryResult;
+             << proteinName << bQueryResult << query.size();
 
     QJsonArray recordArray;
     while(query.next())

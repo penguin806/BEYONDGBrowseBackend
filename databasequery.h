@@ -1,7 +1,6 @@
 #ifndef PROTEINQUERY_H
 #define PROTEINQUERY_H
 
-#include <QString>
 #include <QSqlDatabase>
 #include <QJsonArray>
 

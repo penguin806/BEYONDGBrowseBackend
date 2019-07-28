@@ -42,8 +42,9 @@ void HttpService::initUrlRouting()
             return recordArray;
 
         } catch (QString errorReason) {
-            qDebug() << "[Error] " + QString("/ref/%1/%2 :")
-                        .arg(proteinName, position) + errorReason;
+            errorReason = "[Error] " + QString("/ref/%1/%2 :")
+                    .arg(proteinName, position) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
         }
 
         return recordArray;
@@ -55,8 +56,9 @@ void HttpService::initUrlRouting()
             recordArray = this->queryRegionByProteinId(proteinName);
 
         } catch (QString errorReason) {
-            qDebug() << "[Error] " + QString("/locate/%1 :")
-                        .arg(proteinName) + errorReason;
+            errorReason = "[Error] " + QString("/locate/%1 :")
+                    .arg(proteinName) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
         }
 
         return recordArray;
