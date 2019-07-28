@@ -1,4 +1,5 @@
 #include <QtHttpServer/QHttpServer>
+#include <QJsonDocument>
 #include "httpservice.h"
 #include "databasequery.h"
 
@@ -39,7 +40,6 @@ void HttpService::initUrlRouting()
         QJsonArray recordArray;
         try {
             recordArray = this->queryProteinByReferenceSequenceRegion(proteinName, position);
-            return recordArray;
 
         } catch (QString errorReason) {
             errorReason = "[Error] " + QString("/ref/%1/%2 :")
@@ -63,6 +63,36 @@ void HttpService::initUrlRouting()
 
         return recordArray;
     });
+
+    this->snowHttpServer.route("/annotation/query/<arg>/<arg>", [this](QString name, QString position){
+        QJsonArray recordArray;
+        try {
+            QStringList posList = position.split("..");
+            recordArray = this->queryAnnotationBySequenceRegion(name, posList.at(0), posList.at(1));
+
+        } catch (QString errorReason) {
+            errorReason = "[Error] " + QString("/annotation/query/%1/%2 :")
+                    .arg(name, position) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
+        }
+
+        return recordArray;
+    });
+
+    this->snowHttpServer.route("/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](QString name, qint32 position, QString time, QString contents){
+        bool isInsertSuccess;
+        try {
+            isInsertSuccess = this->insertSequenceAnnotationAtSpecificPosition(
+                        0, name, position, time, QJsonDocument::fromJson(contents.toUtf8()).array());
+
+        } catch (QString errorReason) {
+            errorReason = "[Error] " + QString("/annotation/insert/%1/%2/%3/... :")
+                    .arg(name, QString::number(position), time) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
+        }
+
+        return isInsertSuccess ? QString("SUCCESS") : QString("FAIL");
+    });
 }
 
 QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
@@ -75,7 +105,7 @@ QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
         throw QString("ERROR_QUERY_ARGUMENT_INVALID");
     }
     QJsonArray result = this->databaseQuery
-            .queryProteinByReferenceSequenceRegion(
+            .queryProteinBySequenceRegion(
                 proteinName,posList.at(0),posList.at(1)
              );
 
@@ -99,5 +129,35 @@ QJsonArray HttpService::queryRegionByProteinId(QString proteinName)
     {
         throw QString("ERROR_NOT_FOUND");
     }
+    return result;
+}
+
+QJsonArray HttpService::queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd)
+{
+    if(name.isEmpty() || posStart.isEmpty() || posEnd.isEmpty())
+    {
+        throw QString("ERROR_QUERY_ARGUMENT_INVALID");
+    }
+    QJsonArray result = this->databaseQuery
+            .queryAnnotationBySequenceRegion(name, posStart, posEnd);
+
+    if(result.isEmpty())
+    {
+        throw QString("ERROR_NOT_FOUND");
+    }
+    return result;
+}
+
+bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QJsonArray contents)
+{
+    if(name.isEmpty() || time.isEmpty() || contents.isEmpty())
+    {
+        throw QString("ERROR_QUERY_ARGUMENT_INVALID");
+    }
+    bool result = this->databaseQuery
+            .insertSequenceAnnotationAtSpecificPosition(
+                0, name, position, time, contents
+            );
+
     return result;
 }

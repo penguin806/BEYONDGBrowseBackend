@@ -10,7 +10,7 @@ DatabaseQuery::DatabaseQuery(QSqlDatabase databaseConnection)
     this->databaseConnection = databaseConnection;
 }
 
-QJsonArray DatabaseQuery::queryProteinByReferenceSequenceRegion(QString name, QString posStart, QString posEnd)
+QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString posStart, QString posEnd)
 {
     if(!this->databaseConnection.isOpen())
     {
@@ -148,7 +148,7 @@ ORDER BY\
 
 
     bool bQueryResult = query.exec(queryString);
-    qDebug() << "[Info] queryProteinByReferenceSequenceRegion: "
+    qDebug() << "[Info] queryProteinBySequenceRegion: "
              << name << posStart << posEnd << bQueryResult << query.size();
 
     QJsonArray recordArray;
@@ -212,4 +212,90 @@ QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 //    QJsonDocument jsonDocument(recordArray);
 //    return QString(jsonDocument.toJson(QJsonDocument::Indented));
     return recordArray;
+}
+
+QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
+        QString name, QString posStart, QString posEnd
+)
+{
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+    QSqlQuery query(this->databaseConnection);
+
+//    SELECT
+//        `name`,
+//        `position`,
+//        `time`,
+//        `contents`
+//    FROM
+//        `protein_comments`
+//    WHERE
+//        `name` = 'chr1' AND `position` > 149813250 AND `position` < 149813297
+
+//    name 	position 	time 	contents
+//    chr1 	149813270 	2019-07-28 17:49:36 	[{}, {}]
+    QString queryString = QString(
+                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `name` = '%1' AND `position` >= %2 AND `position` <= %3")
+            .arg(name, posStart, posEnd);
+
+    bool bQueryResult = query.exec(queryString);
+    qDebug() << "[Info] queryAnnotationBySequenceRegion: "
+             << name << posStart << posEnd << bQueryResult << query.size();
+
+    QJsonArray recordArray;
+    while(query.next())
+    {
+        QJsonObject oneLineRecord;
+        oneLineRecord.insert("name",query.value("name").toString());
+        oneLineRecord.insert("position",query.value("position").toString());
+        oneLineRecord.insert("time",query.value("time").toString());
+        oneLineRecord.insert("contents",query.value("contents").toJsonArray());
+
+        recordArray.push_back(oneLineRecord);
+    }
+
+    return recordArray;
+}
+
+bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
+        qint32 id, QString name, qint32 position,
+        QString time, QJsonArray contents
+)
+{
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+    QSqlQuery query(this->databaseConnection);
+//    INSERT INTO `protein_comments`(
+//        `name`,
+//        `position`,
+//        `time`,
+//        `contents`
+//    )
+//    VALUES(:name, :position, :time, :contents)
+//    ON DUPLICATE KEY
+//    UPDATE
+//        `name` = :name,
+//        `position` = :position,
+//        `time` = :time,
+//        `contents` = :contents
+    query.prepare("INSERT INTO `protein_comments`(`name`,`position`,`time`,`contents`) VALUES(:name, :position, :time, :contents) ON DUPLICATE KEY UPDATE `name` = :name,`position` = :position,`time` = :time,`contents` = :contents");
+    query.bindValue(":name", name);
+    query.bindValue(":position", position);
+    query.bindValue(":time", time);
+    query.bindValue(":contents", contents);
+    bool bQueryResult = query.exec();
+    qDebug() << "[Info] insertSequenceAnnotationAtSpecificPosition: "
+             << name << position << time << bQueryResult << query.numRowsAffected();
+    if(query.numRowsAffected() == 1)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
