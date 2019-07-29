@@ -251,7 +251,7 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
         oneLineRecord.insert("name",query.value("name").toString());
         oneLineRecord.insert("position",query.value("position").toString());
         oneLineRecord.insert("time",query.value("time").toString());
-        oneLineRecord.insert("contents",query.value("contents").toJsonArray());
+        oneLineRecord.insert("contents",query.value("contents").toString());
 
         recordArray.push_back(oneLineRecord);
     }
@@ -261,7 +261,7 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
 
 bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
         qint32 id, QString name, qint32 position,
-        QString time, QJsonArray contents
+        QString time, QString contents
 )
 {
     if(!this->databaseConnection.isOpen())

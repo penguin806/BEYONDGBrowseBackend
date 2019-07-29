@@ -83,7 +83,7 @@ void HttpService::initUrlRouting()
         bool isInsertSuccess;
         try {
             isInsertSuccess = this->insertSequenceAnnotationAtSpecificPosition(
-                        0, name, position, time, QJsonDocument::fromJson(contents.toUtf8()).array());
+                        0, name, position, time, contents);
 
         } catch (QString errorReason) {
             errorReason = "[Error] " + QString("/annotation/insert/%1/%2/%3/... :")
@@ -148,7 +148,7 @@ QJsonArray HttpService::queryAnnotationBySequenceRegion(QString name, QString po
     return result;
 }
 
-bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QJsonArray contents)
+bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents)
 {
     if(name.isEmpty() || time.isEmpty() || contents.isEmpty())
     {
