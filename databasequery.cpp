@@ -109,6 +109,7 @@ QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString pos
 SELECT\
     `start`,\
     `end`,\
+    `strand`,\
     `uniprot_id`,\
     `Scan(s)`,\
     `ions`,\
@@ -118,6 +119,7 @@ FROM\
     SELECT\
         `start`,\
         `end`,\
+        `strand`,\
         `uniprot_id`\
     FROM\
         `protein_annotation`\
@@ -155,11 +157,12 @@ ORDER BY\
     while(query.next())
     {
         QJsonObject oneLineRecord;
-        oneLineRecord.insert("_start",query.value("start").toString());
-        oneLineRecord.insert("end",query.value("end").toString());
-        oneLineRecord.insert("uniprot_id",query.value("uniprot_id").toString());
-        oneLineRecord.insert("scanId",query.value("Scan(s)").toString());
-        oneLineRecord.insert("sequence",query.value("proteoform").toString());
+        oneLineRecord.insert("_start", query.value("start").toString());
+        oneLineRecord.insert("end", query.value("end").toString());
+        oneLineRecord.insert("strand", query.value("strand").toString());
+        oneLineRecord.insert("uniprot_id", query.value("uniprot_id").toString());
+        oneLineRecord.insert("scanId", query.value("Scan(s)").toString());
+        oneLineRecord.insert("sequence", query.value("proteoform").toString());
 
         // Convert 3891.12898~4335.73;3990.18703~1990.40;  =>  [3891.12898, 3990.18703], [4335.73, 1990.40]
         QStringList ionsList = query.value("ions").toString().split(';',QString::SkipEmptyParts);
