@@ -42,7 +42,7 @@ void HttpService::initUrlRouting()
             recordArray = this->queryProteinByReferenceSequenceRegion(proteinName, position);
 
         } catch (QString errorReason) {
-            errorReason = "[Error] " + QString("/ref/%1/%2 :")
+            errorReason = "[Warning] " + QString("/ref/%1/%2 :")
                     .arg(proteinName, position) + errorReason;
             qDebug() << errorReason.toUtf8().data();
         }
@@ -56,7 +56,7 @@ void HttpService::initUrlRouting()
             recordArray = this->queryRegionByProteinId(proteinName);
 
         } catch (QString errorReason) {
-            errorReason = "[Error] " + QString("/locate/%1 :")
+            errorReason = "[Warning] " + QString("/locate/%1 :")
                     .arg(proteinName) + errorReason;
             qDebug() << errorReason.toUtf8().data();
         }
@@ -71,7 +71,7 @@ void HttpService::initUrlRouting()
             recordArray = this->queryAnnotationBySequenceRegion(name, posList.at(0), posList.at(1));
 
         } catch (QString errorReason) {
-            errorReason = "[Error] " + QString("/annotation/query/%1/%2 :")
+            errorReason = "[Warning] " + QString("/annotation/query/%1/%2 :")
                     .arg(name, position) + errorReason;
             qDebug() << errorReason.toUtf8().data();
         }
@@ -86,7 +86,7 @@ void HttpService::initUrlRouting()
                         0, name, position, time, contents);
 
         } catch (QString errorReason) {
-            errorReason = "[Error] " + QString("/annotation/insert/%1/%2/%3/... :")
+            errorReason = "[Warning] " + QString("/annotation/insert/%1/%2/%3/... :")
                     .arg(name, QString::number(position), time) + errorReason;
             qDebug() << errorReason.toUtf8().data();
         }
@@ -111,7 +111,7 @@ QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
 
     if(result.isEmpty())
     {
-        throw QString("ERROR_NOT_FOUND");
+        throw QString("NOT_FOUND");
     }
     return result;
 }
@@ -127,7 +127,7 @@ QJsonArray HttpService::queryRegionByProteinId(QString proteinName)
 
     if(result.isEmpty())
     {
-        throw QString("ERROR_NOT_FOUND");
+        throw QString("NOT_FOUND");
     }
     return result;
 }
@@ -143,7 +143,7 @@ QJsonArray HttpService::queryAnnotationBySequenceRegion(QString name, QString po
 
     if(result.isEmpty())
     {
-        throw QString("ERROR_NOT_FOUND");
+        throw QString("NOT_FOUND");
     }
     return result;
 }
