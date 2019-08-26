@@ -236,11 +236,12 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
 //        `protein_comments`
 //    WHERE
 //        `name` = 'chr1' AND `position` > 149813250 AND `position` < 149813297
+//    ORDER BY `time` DESC
 
 //    name 	position 	time 	contents
 //    chr1 	149813270 	2019-07-28 17:49:36 	[{}, {}]
     QString queryString = QString(
-                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `name` = '%1' AND `position` >= %2 AND `position` <= %3")
+                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `name` = '%1' AND `position` >= %2 AND `position` <= %3 ORDER BY `time` DESC")
             .arg(name, posStart, posEnd);
 
     bool bQueryResult = query.exec(queryString);
