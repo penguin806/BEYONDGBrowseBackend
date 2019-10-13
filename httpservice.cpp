@@ -36,6 +36,11 @@ void HttpService::initUrlRouting()
         return "Welcome to BeyondGBrowse web interface!";
     });
 
+    // http://localhost:12080/annotation/query/chr1/149813549..149813576
+    // 取回位置区间对应的蛋白质变体信息
+    // 输入： 参考序列名称、起始位置、终止位置
+    // 返回Json数组，每个对象包含：质荷比数组arrMSScanMassArray、峰度数组arrMSScanPeakAundance、起始位置_start、终止位置end、蛋白质变体序列sequence、正反链strand、scanId、uniprot_id
+    //
     this->snowHttpServer.route("/ref/<arg>/<arg>", [this](QString proteinName, QString position){
         QJsonArray recordArray;
         try {
@@ -49,6 +54,28 @@ void HttpService::initUrlRouting()
 
         return recordArray;
     });
+
+    // http://localhost:12080/locate/H32_HUMAN
+    // 查找蛋白质对应的起始&终止位置
+    // 输入： EnsembleId或UniprotId、起始位置、终止位置
+    // 返回Json数组，Eg:
+    // [
+    //    {
+    //       "_start":"149813271",
+    //       "end":"149813681",
+    //       "name":"chr1"
+    //    },
+    //    {
+    //       "_start":"149839538",
+    //       "end":"149841193",
+    //       "name":"chr1"
+    //    },
+    //    {
+    //       "_start":"149852619",
+    //       "end":"149854274",
+    //       "name":"chr1"
+    //    }
+    // ]
 
     this->snowHttpServer.route("/locate/<arg>", [this](QString proteinName){
         QJsonArray recordArray;
@@ -64,6 +91,18 @@ void HttpService::initUrlRouting()
         return recordArray;
     });
 
+    // http://localhost:12080/annotation/query/Scan998/85..92
+    // 获取特定范围内所有注释
+    // 输入： 参考序列名称/蛋白质变体scanId、起始位置、终止位置
+    // 返回Json数组，Eg:
+    // [
+    //    {
+    //       "contents":"TEST",
+    //       "name":"Scan998",
+    //       "position":"89",
+    //       "time":"2019-10-13T16:24:01.000"
+    //    }
+    // ]
     this->snowHttpServer.route("/annotation/query/<arg>/<arg>", [this](QString name, QString position){
         QJsonArray recordArray;
         try {
@@ -79,6 +118,11 @@ void HttpService::initUrlRouting()
         return recordArray;
     });
 
+    // http://localhost:12080/annotation/insert/Scan1053/65/2019-10-13 16:39:26/TEST
+    // 在特定位置插入注释
+    // 输入： 参考序列名称/蛋白质变体scanId、位置、时间、内容
+    // 成功返回SUCCESS、失败返回FAIL
+    //
     this->snowHttpServer.route("/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](QString name, qint32 position, QString time, QString contents){
         bool isInsertSuccess;
         try {

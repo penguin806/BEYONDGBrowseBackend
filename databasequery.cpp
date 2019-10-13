@@ -10,6 +10,7 @@ DatabaseQuery::DatabaseQuery(QSqlDatabase databaseConnection)
     this->databaseConnection = databaseConnection;
 }
 
+// 取回位置区间对应的蛋白质变体信息
 QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString posStart, QString posEnd)
 {
     if(!this->databaseConnection.isOpen())
@@ -184,6 +185,7 @@ ORDER BY\
     return recordArray;
 }
 
+// 通过蛋白质ID查询范围
 QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 {
     if(!this->databaseConnection.isOpen())
@@ -217,6 +219,7 @@ QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
     return recordArray;
 }
 
+// 获取特定范围内所有注释
 QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
         QString name, QString posStart, QString posEnd
 )
@@ -263,6 +266,7 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
     return recordArray;
 }
 
+// 在特定位置插入注释
 bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
         qint32 id, QString name, qint32 position,
         QString time, QString contents

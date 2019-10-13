@@ -5,8 +5,8 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
-    QCoreApplication::setApplicationName("SnowPluginBackend");
-    QCoreApplication::setApplicationVersion("0.1.0");
+    QCoreApplication::setApplicationName("BEYONDGBrowseBackend");
+    QCoreApplication::setApplicationVersion("1.0.0");
     QCoreApplication::setOrganizationDomain("xuefeng.space");
 
     DataBaseUtil dbUtil;
