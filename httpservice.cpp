@@ -1,11 +1,14 @@
 #include <QtHttpServer/QHttpServer>
 #include <QJsonDocument>
+#include <QSettings>
+#include <QTextCodec>
 #include "httpservice.h"
 #include "databasequery.h"
 
 HttpService::HttpService(QSqlDatabase databaseConnection) :
     databaseQuery(DatabaseQuery(databaseConnection))
 {
+    this->loadHttpServiceConfig();
     this->initUrlRouting();
 }
 
@@ -28,6 +31,20 @@ bool HttpService::startListening()
         qDebug() << successMsg.toUtf8().data();
         return true;
     }
+}
+
+void HttpService::loadHttpServiceConfig()
+{
+    QSettings snowHttpSettings("./config.ini", QSettings::IniFormat);
+    snowHttpSettings.setIniCodec(QTextCodec::codecForName("UTF-8"));
+    snowHttpSettings.beginGroup("General");
+
+    this->listenPort = snowHttpSettings.value(
+        QString("listenPort"),
+        12080
+    ).toInt();
+
+    snowHttpSettings.endGroup();
 }
 
 void HttpService::initUrlRouting()
