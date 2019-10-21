@@ -169,13 +169,16 @@ ORDER BY\
         QStringList ionsList = query.value("ions").toString().split(';',QString::SkipEmptyParts);
         QJsonArray arrMSScanMassArray;
         QJsonArray arrMSScanPeakAundance;
+        QJsonArray arrIonsNum;
         for (QString ionsItem : ionsList) {
-            QStringList massAndPeak = ionsItem.split('~', QString::SkipEmptyParts);
-            arrMSScanMassArray.append(massAndPeak.at(0));
-            arrMSScanPeakAundance.append(massAndPeak.at(1));
+            QStringList massAndPeakAndIons = ionsItem.split('~', QString::SkipEmptyParts);
+            arrMSScanMassArray.append(massAndPeakAndIons.at(0));
+            arrMSScanPeakAundance.append(massAndPeakAndIons.at(1));
+            arrIonsNum.append(massAndPeakAndIons.at(2));
         }
         oneLineRecord.insert("arrMSScanMassArray", arrMSScanMassArray);
         oneLineRecord.insert("arrMSScanPeakAundance", arrMSScanPeakAundance);
+        oneLineRecord.insert("arrIonsNum", arrIonsNum);
 
         recordArray.push_back(oneLineRecord);
     }
