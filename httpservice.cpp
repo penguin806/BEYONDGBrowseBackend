@@ -53,7 +53,7 @@ void HttpService::initUrlRouting()
         return "Welcome to BeyondGBrowse web interface!";
     });
 
-    // http://localhost:12080/annotation/query/chr1/149813549..149813576
+    // http://localhost:12080/ref/chr1/149813549..149813576
     // 取回位置区间对应的蛋白质变体信息
     // 输入： 参考序列名称、起始位置、终止位置
     // 返回Json数组，每个对象包含：质荷比数组arrMSScanMassArray、峰度数组arrMSScanPeakAundance、起始位置_start、终止位置end、蛋白质变体序列sequence、正反链strand、scanId、uniprot_id

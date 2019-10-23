@@ -174,7 +174,7 @@ ORDER BY\
             QStringList massAndPeakAndIons = ionsItem.split('~', QString::SkipEmptyParts);
             arrMSScanMassArray.append(massAndPeakAndIons.at(0));
             arrMSScanPeakAundance.append(massAndPeakAndIons.at(1));
-            arrIonsNum.append(massAndPeakAndIons.at(2));
+            arrIonsNum.append(massAndPeakAndIons.at(2).toInt());
         }
         oneLineRecord.insert("arrMSScanMassArray", arrMSScanMassArray);
         oneLineRecord.insert("arrMSScanPeakAundance", arrMSScanPeakAundance);
