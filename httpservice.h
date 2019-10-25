@@ -1,7 +1,7 @@
 #ifndef HTTPSERVICE_H
 #define HTTPSERVICE_H
 
-#include <QtHttpServer/QHttpServer>
+#include <QtHttpServer>
 #include "databasequery.h"
 
 class HttpService
@@ -20,7 +20,7 @@ protected:
 
 private:
     QHttpServer snowHttpServer;
-    int listenPort = 12080;
+    quint16 listenPort = 12080;
     DatabaseQuery databaseQuery;
 };
 

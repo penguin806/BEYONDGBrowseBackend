@@ -1,4 +1,4 @@
-#include <QtHttpServer/QHttpServer>
+#include <QtHttpServer>
 #include <QJsonDocument>
 #include <QSettings>
 #include <QTextCodec>
@@ -39,10 +39,11 @@ void HttpService::loadHttpServiceConfig()
     snowHttpSettings.setIniCodec(QTextCodec::codecForName("UTF-8"));
     snowHttpSettings.beginGroup("General");
 
-    this->listenPort = snowHttpSettings.value(
+    uint listenPort = snowHttpSettings.value(
         QString("listenPort"),
         12080
-    ).toInt();
+    ).toUInt();
+    this->listenPort = quint16(listenPort);
 
     snowHttpSettings.endGroup();
 }
