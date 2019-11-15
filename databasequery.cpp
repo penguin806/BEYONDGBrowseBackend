@@ -310,3 +310,32 @@ bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
         return false;
     }
 }
+
+// 查询数据集列表
+QJsonArray DatabaseQuery::queryDatasetsList()
+{
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+    QSqlQuery query(this->databaseConnection);
+
+    QString queryString =
+            QString("SELECT `id`, `dataset_name` FROM `dataset_catalog`");
+
+    bool bQueryResult = query.exec(queryString);
+    qDebug() << "[Info] queryDatasetsList: " <<
+                bQueryResult << query.size();
+
+    QJsonArray recordArray;
+    while(query.next())
+    {
+        QJsonObject oneLineRecord;
+        oneLineRecord.insert("id",query.value("id").toString());
+        oneLineRecord.insert("dataset_name",query.value("dataset_name").toString());
+
+        recordArray.push_back(oneLineRecord);
+    }
+
+    return recordArray;
+}

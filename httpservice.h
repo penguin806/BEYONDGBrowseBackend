@@ -17,6 +17,7 @@ protected:
     QJsonArray queryRegionByProteinId(QString proteinName);
     QJsonArray queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd);
     bool insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents);
+    QJsonArray queryDatasetsList();
 
 private:
     QHttpServer snowHttpServer;
