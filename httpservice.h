@@ -1,7 +1,7 @@
 #ifndef HTTPSERVICE_H
 #define HTTPSERVICE_H
 
-#include <QtHttpServer/QHttpServer>
+#include <QtHttpServer>
 #include "databasequery.h"
 
 class HttpService
@@ -17,10 +17,11 @@ protected:
     QJsonArray queryRegionByProteinId(QString proteinName);
     QJsonArray queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd);
     bool insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents);
+    QJsonArray queryDatasetsList();
 
 private:
     QHttpServer snowHttpServer;
-    int listenPort = 12080;
+    quint16 listenPort = 12080;
     DatabaseQuery databaseQuery;
 };
 

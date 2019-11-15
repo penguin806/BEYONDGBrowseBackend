@@ -14,6 +14,7 @@ bool DataBaseUtil::connectToDataBase()
     bool isMysqlAvailable = QSqlDatabase::isDriverAvailable("QMYSQL");
     if(!isMysqlAvailable)
     {
+        qDebug() << "[Info] Available database driver: " << QSqlDatabase::drivers();
         qDebug() << "[Error] QMYSQL Driver Not Available!";
         return false;
     }

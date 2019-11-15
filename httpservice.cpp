@@ -1,4 +1,4 @@
-#include <QtHttpServer/QHttpServer>
+#include <QtHttpServer>
 #include <QJsonDocument>
 #include <QSettings>
 #include <QTextCodec>
@@ -39,10 +39,11 @@ void HttpService::loadHttpServiceConfig()
     snowHttpSettings.setIniCodec(QTextCodec::codecForName("UTF-8"));
     snowHttpSettings.beginGroup("General");
 
-    this->listenPort = snowHttpSettings.value(
+    uint listenPort = snowHttpSettings.value(
         QString("listenPort"),
         12080
-    ).toInt();
+    ).toUInt();
+    this->listenPort = quint16(listenPort);
 
     snowHttpSettings.endGroup();
 }
@@ -154,6 +155,25 @@ void HttpService::initUrlRouting()
 
         return isInsertSuccess ? QString("SUCCESS") : QString("FAIL");
     });
+
+    // http://localhost:12080/datasets
+    // 查询数据集索引
+    // 输入： 无
+    // 返回Json数组： 当前数据库中所有数据集的id与对应name
+    //
+    this->snowHttpServer.route("/datasets", [this](){
+        QJsonArray recordArray;
+        try {
+            recordArray = this->queryDatasetsList();
+
+        } catch (QString errorReason) {
+            errorReason = "[Warning] " + QString("/datasets :")
+                    + errorReason;
+            qDebug() << errorReason.toUtf8().data();
+        }
+
+        return recordArray;
+    });
 }
 
 QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
@@ -221,4 +241,9 @@ bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString 
             );
 
     return result;
+}
+
+QJsonArray HttpService::queryDatasetsList()
+{
+    return this->databaseQuery.queryDatasetsList();
 }

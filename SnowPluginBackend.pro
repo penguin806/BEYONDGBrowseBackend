@@ -1,6 +1,9 @@
+requires(qtHaveModule(httpserver))
+
 QT -= gui
 QT += network
 QT += sql
+QT += httpserver
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
@@ -26,19 +29,6 @@ SOURCES += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-
-# Load module <QtHttpServer>
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ -lQt5HttpServer
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ -lQt5HttpServerd
-
-INCLUDEPATH += $$PWD/include
-DEPENDPATH += $$PWD/include
-
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/lib/libQt5HttpServer.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/lib/libQt5HttpServerd.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/lib/Qt5HttpServer.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/lib/Qt5HttpServerd.lib
 
 HEADERS += \
     databasequery.h \
