@@ -8,10 +8,10 @@ class DatabaseQuery
 {
 public:
     DatabaseQuery(QSqlDatabase databaseConnection);
-    QJsonArray queryProteinBySequenceRegion(QString name, QString posStart, QString posEnd);
-    QJsonArray queryRegionByProteinId(QString proteinName);
-    QJsonArray queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd);
-    bool insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents);
+    QJsonArray queryProteinBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd);
+    QJsonArray queryRegionByProteinId(quint16 datasetId, QString proteinName);
+    QJsonArray queryAnnotationBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd);
+    bool insertSequenceAnnotationAtSpecificPosition(quint16 datasetId, qint32 id, QString name, qint32 position, QString time, QString contents, QString authorUsername, QString remoteAddress);
     QJsonArray queryDatasetsList();
 
 private:

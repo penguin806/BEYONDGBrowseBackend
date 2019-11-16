@@ -54,15 +54,15 @@ void HttpService::initUrlRouting()
         return "Welcome to BeyondGBrowse web interface!";
     });
 
-    // http://localhost:12080/ref/chr1/149813549..149813576
+    // http://localhost:12080/ref/1/chr1/149813549..149813576
     // 取回位置区间对应的蛋白质变体信息
-    // 输入： 参考序列名称、起始位置、终止位置
+    // 输入： 数据集ID、参考序列名称、起始位置、终止位置
     // 返回Json数组，每个对象包含：质荷比数组arrMSScanMassArray、峰度数组arrMSScanPeakAundance、起始位置_start、终止位置end、蛋白质变体序列sequence、正反链strand、scanId、uniprot_id
     //
-    this->snowHttpServer.route("/ref/<arg>/<arg>", [this](QString proteinName, QString position){
+    this->snowHttpServer.route("/<arg>/ref/<arg>/<arg>", [this](quint16 datasetId, QString proteinName, QString position){
         QJsonArray recordArray;
         try {
-            recordArray = this->queryProteinByReferenceSequenceRegion(proteinName, position);
+            recordArray = this->queryProteinByReferenceSequenceRegion(datasetId, proteinName, position);
 
         } catch (QString errorReason) {
             errorReason = "[Warning] " + QString("/ref/%1/%2 :")
@@ -73,9 +73,9 @@ void HttpService::initUrlRouting()
         return recordArray;
     });
 
-    // http://localhost:12080/locate/H32_HUMAN
+    // http://localhost:12080/<arg>/locate/H32_HUMAN
     // 查找蛋白质对应的起始&终止位置
-    // 输入： EnsembleId或UniprotId、起始位置、终止位置
+    // 输入： 数据集ID、EnsembleId或UniprotId、起始位置、终止位置
     // 返回Json数组，Eg:
     // [
     //    {
@@ -95,10 +95,10 @@ void HttpService::initUrlRouting()
     //    }
     // ]
 
-    this->snowHttpServer.route("/locate/<arg>", [this](QString proteinName){
+    this->snowHttpServer.route("/<arg>/locate/<arg>", [this](quint16 datasetId, QString proteinName){
         QJsonArray recordArray;
         try {
-            recordArray = this->queryRegionByProteinId(proteinName);
+            recordArray = this->queryRegionByProteinId(datasetId, proteinName);
 
         } catch (QString errorReason) {
             errorReason = "[Warning] " + QString("/locate/%1 :")
@@ -109,9 +109,9 @@ void HttpService::initUrlRouting()
         return recordArray;
     });
 
-    // http://localhost:12080/annotation/query/Scan998/85..92
+    // http://localhost:12080/1/annotation/query/Scan998/85..92
     // 获取特定范围内所有注释
-    // 输入： 参考序列名称/蛋白质变体scanId、起始位置、终止位置
+    // 输入： 数据集ID、参考序列名称/蛋白质变体scanId、起始位置、终止位置
     // 返回Json数组，Eg:
     // [
     //    {
@@ -121,11 +121,11 @@ void HttpService::initUrlRouting()
     //       "time":"2019-10-13T16:24:01.000"
     //    }
     // ]
-    this->snowHttpServer.route("/annotation/query/<arg>/<arg>", [this](QString name, QString position){
+    this->snowHttpServer.route("/<arg>/annotation/query/<arg>/<arg>", [this](quint16 datasetId, QString name, QString position){
         QJsonArray recordArray;
         try {
             QStringList posList = position.split("..");
-            recordArray = this->queryAnnotationBySequenceRegion(name, posList.at(0), posList.at(1));
+            recordArray = this->queryAnnotationBySequenceRegion(datasetId, name, posList.at(0), posList.at(1));
 
         } catch (QString errorReason) {
             errorReason = "[Warning] " + QString("/annotation/query/%1/%2 :")
@@ -141,11 +141,18 @@ void HttpService::initUrlRouting()
     // 输入： 参考序列名称/蛋白质变体scanId、位置、时间、内容
     // 成功返回SUCCESS、失败返回FAIL
     //
-    this->snowHttpServer.route("/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](QString name, qint32 position, QString time, QString contents){
+    this->snowHttpServer.route("/<arg>/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](quint16 datasetId, QString name, qint32 position, QString time, QString contents, const QHttpServerRequest &request){
+//        QByteArray value = request.value("Host");
+//        QUrl url = request.url();
+//        QVariantMap headers = request.headers();
+//        QByteArray body = request.body();
+        QString authorUsername = request.query().queryItemValue("author");
+        QString remoteAddress = request.remoteAddress().toString();
+
         bool isInsertSuccess;
         try {
             isInsertSuccess = this->insertSequenceAnnotationAtSpecificPosition(
-                        0, name, position, time, contents);
+                        datasetId, 0, name, position, time, contents, authorUsername, remoteAddress);
 
         } catch (QString errorReason) {
             errorReason = "[Warning] " + QString("/annotation/insert/%1/%2/%3/... :")
@@ -177,7 +184,7 @@ void HttpService::initUrlRouting()
 }
 
 QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
-            QString proteinName, QString position
+            quint16 datasetId, QString proteinName, QString position
         )
 {
     QStringList posList = position.split("..");
@@ -187,7 +194,7 @@ QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
     }
     QJsonArray result = this->databaseQuery
             .queryProteinBySequenceRegion(
-                proteinName,posList.at(0),posList.at(1)
+                datasetId, proteinName,posList.at(0),posList.at(1)
              );
 
     if(result.isEmpty())
@@ -197,14 +204,14 @@ QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
     return result;
 }
 
-QJsonArray HttpService::queryRegionByProteinId(QString proteinName)
+QJsonArray HttpService::queryRegionByProteinId(quint16 datasetId, QString proteinName)
 {
     if(proteinName.isEmpty())
     {
         throw QString("ERROR_QUERY_ARGUMENT_INVALID");
     }
     QJsonArray result = this->databaseQuery
-            .queryRegionByProteinId(proteinName);
+            .queryRegionByProteinId(datasetId, proteinName);
 
     if(result.isEmpty())
     {
@@ -213,14 +220,14 @@ QJsonArray HttpService::queryRegionByProteinId(QString proteinName)
     return result;
 }
 
-QJsonArray HttpService::queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd)
+QJsonArray HttpService::queryAnnotationBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd)
 {
     if(name.isEmpty() || posStart.isEmpty() || posEnd.isEmpty())
     {
         throw QString("ERROR_QUERY_ARGUMENT_INVALID");
     }
     QJsonArray result = this->databaseQuery
-            .queryAnnotationBySequenceRegion(name, posStart, posEnd);
+            .queryAnnotationBySequenceRegion(datasetId, name, posStart, posEnd);
 
     if(result.isEmpty())
     {
@@ -229,7 +236,7 @@ QJsonArray HttpService::queryAnnotationBySequenceRegion(QString name, QString po
     return result;
 }
 
-bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents)
+bool HttpService::insertSequenceAnnotationAtSpecificPosition(quint16 datasetId, qint32 id, QString name, qint32 position, QString time, QString contents, QString authorUsername, QString remoteAddress)
 {
     if(name.isEmpty() || time.isEmpty() || contents.isEmpty())
     {
@@ -237,7 +244,7 @@ bool HttpService::insertSequenceAnnotationAtSpecificPosition(qint32 id, QString 
     }
     bool result = this->databaseQuery
             .insertSequenceAnnotationAtSpecificPosition(
-                0, name, position, time, contents
+                datasetId, 0, name, position, time, contents, authorUsername, remoteAddress
             );
 
     return result;

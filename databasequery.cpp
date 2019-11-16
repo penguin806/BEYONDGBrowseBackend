@@ -3,6 +3,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDebug>
+#include <QSqlError>
 //#include <QJsonDocument>
 
 DatabaseQuery::DatabaseQuery(QSqlDatabase databaseConnection)
@@ -11,7 +12,7 @@ DatabaseQuery::DatabaseQuery(QSqlDatabase databaseConnection)
 }
 
 // 取回位置区间对应的蛋白质变体信息
-QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString posStart, QString posEnd)
+QJsonArray DatabaseQuery::queryProteinBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd)
 {
     if(!this->databaseConnection.isOpen())
     {
@@ -19,7 +20,7 @@ QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString pos
     }
     QSqlQuery query(this->databaseConnection);
 
-// 2019-07-11 SQL:
+// 2019-11-16 SQL:
 // SELECT
 //     `start`,
 //     `end`,
@@ -36,7 +37,7 @@ QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString pos
 //     FROM
 //         `protein_annotation`
 //     WHERE
-//         (
+//         `dataset_id` = 1 AND (
 //             `name` = 'chr1' AND `start` >= '1' AND `end` <= '600000000'
 //         ) OR(
 //             `name` = 'chr1' AND `start` < '1' AND `end` > '1'
@@ -51,47 +52,10 @@ QJsonArray DatabaseQuery::queryProteinBySequenceRegion(QString name, QString pos
 // `protein_sequence`,
 // `protein_scan`
 // WHERE
-//     `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`
+//     `protein_scan`.`dataset_id` = 1 AND `protein_sequence`.`dataset_id` = 1 AND `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`
 // ORDER BY
 //     `start`,
 //     `Scan(s)`
-
-
-//  2019-06-03 SQL:
-//
-//    SELECT
-//        `start`,
-//        `end`,
-//        `uniprot_id`,
-//        `Scan(s)`,
-//        `proteoform`
-//    FROM
-//        (
-//        SELECT
-//            `start`,
-//            `end`,
-//            `uniprot_id`
-//        FROM
-//            `protein_annotation`
-//        WHERE
-//            (
-//                `name` = 'chr1' AND `start` >= '1' AND `end` <= '600000000'
-//            ) OR(
-//                `name` = 'chr1' AND `start` < '1' AND `end` > '1'
-//            ) OR(
-//                `name` = 'chr1' AND `start` < '600000000' AND `end` > '600000000'
-//            ) OR(
-//                `name` = 'chr1' AND `start` < '1' AND `end` > '600000000'
-//            )
-//        GROUP BY
-//            `uniprot_id`
-//    ) AS `id_list`,
-//    `protein_sequence`
-//    WHERE
-//        `uniprot_id` = `Protein accession`
-//    ORDER BY
-//        `start`,
-//        `Scan(s)`
 
 // Test Query Result:
 // start        end         uniprot_id	Scan(s) proteoform
@@ -125,7 +89,7 @@ FROM\
     FROM\
         `protein_annotation`\
     WHERE\
-        (\
+        `dataset_id` = %4 AND (\
             `name` = '%1' AND `start` >= '%2' AND `end` <= '%3'\
         ) OR(\
             `name` = '%1' AND `start` < '%2' AND `end` > '%2'\
@@ -140,19 +104,19 @@ FROM\
 `protein_sequence`,\
 `protein_scan` \
 WHERE\
-    `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`\
+    `protein_scan`.`dataset_id` = %4 AND `protein_sequence`.`dataset_id` = %4 AND `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`\
 ORDER BY\
     `start`,\
     `Scan(s)`\
 "
     ).arg(
-                name, posStart, posEnd
+                name, posStart, posEnd, QString::number(datasetId)
          );
 
 
     bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] queryProteinBySequenceRegion: "
-             << name << posStart << posEnd << bQueryResult << query.size();
+             << datasetId << name << posStart << posEnd << bQueryResult << query.size();
 
     QJsonArray recordArray;
     while(query.next())
@@ -189,7 +153,7 @@ ORDER BY\
 }
 
 // 通过蛋白质ID查询范围
-QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
+QJsonArray DatabaseQuery::queryRegionByProteinId(quint16 datasetId, QString proteinName)
 {
     if(!this->databaseConnection.isOpen())
     {
@@ -199,12 +163,12 @@ QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 
     // SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = 'ENSP00000000233'
     QString queryString =
-            QString("SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `ensembl_id` = '%1' OR `uniprot_id` = '%1'")
-            .arg(proteinName);
+            QString("SELECT `name`,`start`,`end` FROM `protein_annotation` WHERE `dataset_id` = %1 AND (`ensembl_id` = '%2' OR `uniprot_id` = '%2')")
+            .arg(QString::number(datasetId), proteinName);
 
     bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] queryRegionByProteinId: "
-             << proteinName << bQueryResult << query.size();
+             << datasetId << proteinName << bQueryResult << query.size();
 
     QJsonArray recordArray;
     while(query.next())
@@ -224,7 +188,7 @@ QJsonArray DatabaseQuery::queryRegionByProteinId(QString proteinName)
 
 // 获取特定范围内所有注释
 QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
-        QString name, QString posStart, QString posEnd
+        quint16 datasetId, QString name, QString posStart, QString posEnd
 )
 {
     if(!this->databaseConnection.isOpen())
@@ -241,14 +205,14 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
 //    FROM
 //        `protein_comments`
 //    WHERE
-//        `name` = 'chr1' AND `position` > 149813250 AND `position` < 149813297
+//        `dataset_id` = 1 AND `name` = 'chr1' AND `position` > 149813250 AND `position` < 149813297
 //    ORDER BY `time` DESC
 
 //    name 	position 	time 	contents
 //    chr1 	149813270 	2019-07-28 17:49:36 	[{}, {}]
     QString queryString = QString(
-                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `name` = '%1' AND `position` >= %2 AND `position` <= %3 ORDER BY `time` DESC")
-            .arg(name, posStart, posEnd);
+                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `dataset_id` = %4 AND `name` = '%1' AND `position` >= %2 AND `position` <= %3 ORDER BY `time` DESC")
+            .arg(name, posStart, posEnd, QString::number(datasetId));
 
     bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] queryAnnotationBySequenceRegion: "
@@ -271,8 +235,8 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
 
 // 在特定位置插入注释
 bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
-        qint32 id, QString name, qint32 position,
-        QString time, QString contents
+        quint16 datasetId, qint32 id, QString name, qint32 position,
+        QString time, QString contents, QString authorUsername, QString remoteAddress
 )
 {
     if(!this->databaseConnection.isOpen())
@@ -281,32 +245,39 @@ bool DatabaseQuery::insertSequenceAnnotationAtSpecificPosition(
     }
     QSqlQuery query(this->databaseConnection);
 //    INSERT INTO `protein_comments`(
+//        `dataset_id`,
 //        `name`,
 //        `position`,
 //        `time`,
 //        `contents`
 //    )
-//    VALUES(:name, :position, :time, :contents)
+//    VALUES(:dataset_id, :name, :position, :time, :contents)
 //    ON DUPLICATE KEY
 //    UPDATE
+//        `dataset_id` = :dataset_id,
 //        `name` = :name,
 //        `position` = :position,
 //        `time` = :time,
 //        `contents` = :contents
-    query.prepare("INSERT INTO `protein_comments`(`name`,`position`,`time`,`contents`) VALUES(:name, :position, :time, :contents) ON DUPLICATE KEY UPDATE `name` = :name,`position` = :position,`time` = :time,`contents` = :contents");
+    query.prepare("INSERT INTO `protein_comments`(`dataset_id`,`name`,`position`,`time`,`contents`,`ipaddress`,`author`) VALUES(:dataset_id, :name, :position, :time, :contents, :ipaddress, :author) ON DUPLICATE KEY UPDATE `dataset_id` = :dataset_id,`name` = :name,`position` = :position,`time` = :time,`contents` = :contents,`ipaddress` = :ipaddress,`author` = :author");
+    query.bindValue(":dataset_id", datasetId);
     query.bindValue(":name", name);
     query.bindValue(":position", position);
     query.bindValue(":time", time);
     query.bindValue(":contents", contents);
+    query.bindValue(":ipaddress", remoteAddress);
+    query.bindValue(":author", authorUsername);
     bool bQueryResult = query.exec();
     qDebug() << "[Info] insertSequenceAnnotationAtSpecificPosition: "
-             << name << position << time << bQueryResult << query.numRowsAffected();
+             << datasetId << name << position << time << bQueryResult << query.numRowsAffected();
     if(query.numRowsAffected() == 1)
     {
         return true;
     }
     else
     {
+        qDebug() << "[Error] insertSequenceAnnotationAtSpecificPosition: "
+                 << query.lastError().text();
         return false;
     }
 }
@@ -331,8 +302,8 @@ QJsonArray DatabaseQuery::queryDatasetsList()
     while(query.next())
     {
         QJsonObject oneLineRecord;
-        oneLineRecord.insert("id",query.value("id").toString());
-        oneLineRecord.insert("dataset_name",query.value("dataset_name").toString());
+        oneLineRecord.insert("id", query.value("id").toInt());
+        oneLineRecord.insert("dataset_name", query.value("dataset_name").toString());
 
         recordArray.push_back(oneLineRecord);
     }

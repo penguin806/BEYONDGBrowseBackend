@@ -13,10 +13,10 @@ public:
 protected:
     void loadHttpServiceConfig();
     void initUrlRouting();
-    QJsonArray queryProteinByReferenceSequenceRegion(QString proteinName, QString position);
-    QJsonArray queryRegionByProteinId(QString proteinName);
-    QJsonArray queryAnnotationBySequenceRegion(QString name, QString posStart, QString posEnd);
-    bool insertSequenceAnnotationAtSpecificPosition(qint32 id, QString name, qint32 position, QString time, QString contents);
+    QJsonArray queryProteinByReferenceSequenceRegion(quint16 datasetId, QString proteinName, QString position);
+    QJsonArray queryRegionByProteinId(quint16 datasetId, QString proteinName);
+    QJsonArray queryAnnotationBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd);
+    bool insertSequenceAnnotationAtSpecificPosition(quint16 datasetId, qint32 id, QString name, qint32 position, QString time, QString contents, QString authorUsername, QString remoteAddress);
     QJsonArray queryDatasetsList();
 
 private:
