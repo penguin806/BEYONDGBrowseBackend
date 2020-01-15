@@ -76,6 +76,7 @@ SELECT\
     `end`,\
     `strand`,\
     `uniprot_id`,\
+    `ensembl_id`,\
     `Scan(s)`,\
     `ions`,\
     `proteoform`\
@@ -85,7 +86,8 @@ FROM\
         `start`,\
         `end`,\
         `strand`,\
-        `uniprot_id`\
+        `uniprot_id`,\
+        `ensembl_id`\
     FROM\
         `protein_annotation`\
     WHERE\
@@ -126,6 +128,7 @@ ORDER BY\
         oneLineRecord.insert("end", query.value("end").toString());
         oneLineRecord.insert("strand", query.value("strand").toString());
         oneLineRecord.insert("uniprot_id", query.value("uniprot_id").toString());
+        oneLineRecord.insert("ensembl_id", query.value("ensembl_id").toString());
         oneLineRecord.insert("scanId", query.value("Scan(s)").toString());
         oneLineRecord.insert("sequence", query.value("proteoform").toString());
 
@@ -306,6 +309,32 @@ QJsonArray DatabaseQuery::queryDatasetsList()
         oneLineRecord.insert("dataset_name", query.value("dataset_name").toString());
 
         recordArray.push_back(oneLineRecord);
+    }
+
+    return recordArray;
+}
+
+// 查询所有以proteinName开头的蛋白质ID
+QJsonArray DatabaseQuery::queryProteinIdListForAutoComplete(quint16 datasetId, QString proteinName)
+{
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+    QSqlQuery query(this->databaseConnection);
+
+    // SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE 'H32% LIMIT 100'
+    query.prepare("SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE :proteinName LIMIT 100");
+    query.bindValue(":proteinName", proteinName + '%');
+    bool bQueryResult = query.exec();
+
+    qDebug() << "[Info] queryProteinIdListForAutoComplete: "
+             << datasetId << proteinName << bQueryResult << query.size();
+
+    QJsonArray recordArray;
+    while(query.next())
+    {
+        recordArray.push_back(query.value("uniprot_id").toString());
     }
 
     return recordArray;

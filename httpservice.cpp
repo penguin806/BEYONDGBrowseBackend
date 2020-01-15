@@ -73,7 +73,7 @@ void HttpService::initUrlRouting()
         return recordArray;
     });
 
-    // http://localhost:12080/<arg>/locate/H32_HUMAN
+    // http://localhost:12080/1/locate/H32_HUMAN
     // 查找蛋白质对应的起始&终止位置
     // 输入： 数据集ID、EnsembleId或UniprotId、起始位置、终止位置
     // 返回Json数组，Eg:
@@ -181,6 +181,42 @@ void HttpService::initUrlRouting()
 
         return recordArray;
     });
+
+    // http://localhost:12080/1/locate_autocomplete/H32
+    // 查找所有以xxx开头的蛋白质ID
+    // 输入： 数据集ID、UniprotId
+    // 返回Json数组，Eg:
+    // [
+    //    {
+    //       "_start":"149813271",
+    //       "end":"149813681",
+    //       "name":"chr1"
+    //    },
+    //    {
+    //       "_start":"149839538",
+    //       "end":"149841193",
+    //       "name":"chr1"
+    //    },
+    //    {
+    //       "_start":"149852619",
+    //       "end":"149854274",
+    //       "name":"chr1"
+    //    }
+    // ]
+
+    this->snowHttpServer.route("/<arg>/locate_autocomplete/<arg>", [this](quint16 datasetId, QString proteinName){
+        QJsonArray recordArray;
+        try {
+            recordArray = this->queryProteinIdListForAutoComplete(datasetId, proteinName);
+
+        } catch (QString errorReason) {
+            errorReason = "[Warning] " + QString("/locate_autocomplete/%1 :")
+                    .arg(proteinName) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
+        }
+
+        return recordArray;
+    });
 }
 
 QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
@@ -253,4 +289,20 @@ bool HttpService::insertSequenceAnnotationAtSpecificPosition(quint16 datasetId, 
 QJsonArray HttpService::queryDatasetsList()
 {
     return this->databaseQuery.queryDatasetsList();
+}
+
+QJsonArray HttpService::queryProteinIdListForAutoComplete(quint16 datasetId, QString proteinName)
+{
+    if(proteinName.isEmpty())
+    {
+        throw QString("ERROR_QUERY_ARGUMENT_INVALID");
+    }
+    QJsonArray result = this->databaseQuery
+            .queryProteinIdListForAutoComplete(datasetId, proteinName);
+
+    if(result.isEmpty())
+    {
+        throw QString("NOT_FOUND");
+    }
+    return result;
 }
