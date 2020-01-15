@@ -323,9 +323,9 @@ QJsonArray DatabaseQuery::queryProteinIdListForAutoComplete(quint16 datasetId, Q
     }
     QSqlQuery query(this->databaseConnection);
 
-    // SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE 'H32% LIMIT 100'
-    query.prepare("SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE :proteinName LIMIT 100");
-    query.bindValue(":proteinName", proteinName + '%');
+    // SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE 'H32% LIMIT 50'
+    query.prepare("SELECT DISTINCT `uniprot_id` FROM `protein_annotation` WHERE `uniprot_id` LIKE :proteinName LIMIT 50");
+    query.bindValue(":proteinName", '%' + proteinName + '%');
     bool bQueryResult = query.exec();
 
     qDebug() << "[Info] queryProteinIdListForAutoComplete: "
