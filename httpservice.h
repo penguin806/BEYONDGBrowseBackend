@@ -13,6 +13,11 @@ public:
 protected:
     void loadHttpServiceConfig();
     void initUrlRouting();
+    void writeResponseData(
+                QHttpServerResponder &responder,
+                const QJsonDocument &document,
+                QHttpServerResponder::StatusCode status = QHttpServerResponder::StatusCode::Ok
+            );
     QJsonArray queryProteinByReferenceSequenceRegion(quint16 datasetId, QString proteinName, QString position);
     QJsonArray queryRegionByProteinId(quint16 datasetId, QString proteinName);
     QJsonArray queryAnnotationBySequenceRegion(quint16 datasetId, QString name, QString posStart, QString posEnd);

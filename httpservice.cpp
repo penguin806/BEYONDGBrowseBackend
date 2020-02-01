@@ -48,6 +48,24 @@ void HttpService::loadHttpServiceConfig()
     snowHttpSettings.endGroup();
 }
 
+// Encapsulate the process of writing data,
+// Add request headers to resolve 'CORS (Cross-Origin Resource Sharing)' issue on modern browsers
+void HttpService::writeResponseData(QHttpServerResponder &responder, const QJsonDocument &document, QHttpServerResponder::StatusCode status)
+{
+    std::initializer_list<std::pair<QByteArray, QByteArray>> headerList =
+    {
+        std::pair<QByteArray, QByteArray>(
+            QByteArrayLiteral("Access-Control-Allow-Origin"),
+            QByteArrayLiteral("*")
+        ),
+        std::pair<QByteArray, QByteArray>(
+            QByteArrayLiteral("Access-Control-Allow-Methods"),
+            QByteArrayLiteral("GET, POST")
+        )
+    };
+    responder.write(document, headerList);
+}
+
 void HttpService::initUrlRouting()
 {
     this->snowHttpServer.route("/", [](){
@@ -59,7 +77,7 @@ void HttpService::initUrlRouting()
     // 输入： 数据集ID、参考序列名称、起始位置、终止位置
     // 返回Json数组，每个对象包含：质荷比数组arrMSScanMassArray、峰度数组arrMSScanPeakAundance、起始位置_start、终止位置end、蛋白质变体序列sequence、正反链strand、scanId、uniprot_id
     //
-    this->snowHttpServer.route("/<arg>/ref/<arg>/<arg>", [this](quint16 datasetId, QString proteinName, QString position){
+    this->snowHttpServer.route("/<arg>/ref/<arg>/<arg>", [this](quint16 datasetId, QString proteinName, QString position, QHttpServerResponder &&responder){
         QJsonArray recordArray;
         try {
             recordArray = this->queryProteinByReferenceSequenceRegion(datasetId, proteinName, position);
@@ -70,7 +88,7 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return recordArray;
+        this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
     // http://localhost:12080/1/locate/H32_HUMAN
@@ -95,7 +113,7 @@ void HttpService::initUrlRouting()
     //    }
     // ]
 
-    this->snowHttpServer.route("/<arg>/locate/<arg>", [this](quint16 datasetId, QString proteinName){
+    this->snowHttpServer.route("/<arg>/locate/<arg>", [this](quint16 datasetId, QString proteinName, QHttpServerResponder &&responder){
         QJsonArray recordArray;
         try {
             recordArray = this->queryRegionByProteinId(datasetId, proteinName);
@@ -106,7 +124,7 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return recordArray;
+        this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
     // http://localhost:12080/1/annotation/query/Scan998/85..92
@@ -121,7 +139,7 @@ void HttpService::initUrlRouting()
     //       "time":"2019-10-13T16:24:01.000"
     //    }
     // ]
-    this->snowHttpServer.route("/<arg>/annotation/query/<arg>/<arg>", [this](quint16 datasetId, QString name, QString position){
+    this->snowHttpServer.route("/<arg>/annotation/query/<arg>/<arg>", [this](quint16 datasetId, QString name, QString position, QHttpServerResponder &&responder){
         QJsonArray recordArray;
         try {
             QStringList posList = position.split("..");
@@ -133,7 +151,7 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return recordArray;
+        this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
     // http://localhost:12080/annotation/insert/Scan1053/65/2019-10-13 16:39:26/TEST
@@ -141,7 +159,7 @@ void HttpService::initUrlRouting()
     // 输入： 参考序列名称/蛋白质变体scanId、位置、时间、内容
     // 成功返回SUCCESS、失败返回FAIL
     //
-    this->snowHttpServer.route("/<arg>/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](quint16 datasetId, QString name, qint32 position, QString time, QString contents, const QHttpServerRequest &request){
+    this->snowHttpServer.route("/<arg>/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](quint16 datasetId, QString name, qint32 position, QString time, QString contents, const QHttpServerRequest &request, QHttpServerResponder &&responder){
 //        QByteArray value = request.value("Host");
 //        QUrl url = request.url();
 //        QVariantMap headers = request.headers();
@@ -160,7 +178,18 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return isInsertSuccess ? QString("SUCCESS") : QString("FAIL");
+        if(isInsertSuccess)
+        {
+            QJsonObject jsonObjectToResponse({ QPair<QString, QJsonValue>(QString("status"), QString("SUCCESS")) });
+            QJsonDocument jsonDocumentToResponse(jsonObjectToResponse);
+            this->writeResponseData(responder, jsonDocumentToResponse);
+        }
+        else
+        {
+            QJsonObject jsonObjectToResponse({ QPair<QString, QJsonValue>(QString("status"), QString("FAIL")) });
+            QJsonDocument jsonDocumentToResponse(jsonObjectToResponse);
+            this->writeResponseData(responder, jsonDocumentToResponse);
+        }
     });
 
     // http://localhost:12080/datasets
@@ -168,7 +197,7 @@ void HttpService::initUrlRouting()
     // 输入： 无
     // 返回Json数组： 当前数据库中所有数据集的id与对应name
     //
-    this->snowHttpServer.route("/datasets", [this](){
+    this->snowHttpServer.route("/datasets", [this](QHttpServerResponder &&responder){
         QJsonArray recordArray;
         try {
             recordArray = this->queryDatasetsList();
@@ -179,32 +208,20 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return recordArray;
+        this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
     // http://localhost:12080/1/locate_autocomplete/H32
     // 查找所有以xxx开头的蛋白质ID
-    // 输入： 数据集ID、UniprotId
+    // 输入： 数据集ID、 UniprotId
     // 返回Json数组，Eg:
     // [
-    //    {
-    //       "_start":"149813271",
-    //       "end":"149813681",
-    //       "name":"chr1"
-    //    },
-    //    {
-    //       "_start":"149839538",
-    //       "end":"149841193",
-    //       "name":"chr1"
-    //    },
-    //    {
-    //       "_start":"149852619",
-    //       "end":"149854274",
-    //       "name":"chr1"
-    //    }
+    //     "H32_HUMAN",
+    //     "H0YH32_HUMAN",
+    //     "KLH32_HUMAN",
+    //     "A0A0G2JH32_HUMAN"
     // ]
-
-    this->snowHttpServer.route("/<arg>/locate_autocomplete/<arg>", [this](quint16 datasetId, QString proteinName){
+    this->snowHttpServer.route("/<arg>/locate_autocomplete/<arg>", [this](quint16 datasetId, QString proteinName, QHttpServerResponder &&responder){
         QJsonArray recordArray;
         try {
             recordArray = this->queryProteinIdListForAutoComplete(datasetId, proteinName);
@@ -215,9 +232,11 @@ void HttpService::initUrlRouting()
             qDebug() << errorReason.toUtf8().data();
         }
 
-        return recordArray;
+        this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 }
+
+
 
 QJsonArray HttpService::queryProteinByReferenceSequenceRegion(
             quint16 datasetId, QString proteinName, QString position
