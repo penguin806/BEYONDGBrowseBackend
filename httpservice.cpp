@@ -72,7 +72,7 @@ void HttpService::initUrlRouting()
         return "Welcome to BeyondGBrowse web interface!";
     });
 
-    // http://localhost:12080/ref/1/chr1/149813549..149813576
+    // http://localhost:12080/1/ref/chr1/149813549..149813576
     // 取回位置区间对应的蛋白质变体信息
     // 输入： 数据集ID、参考序列名称、起始位置、终止位置
     // 返回Json数组，每个对象包含：质荷比数组arrMSScanMassArray、峰度数组arrMSScanPeakAundance、起始位置_start、终止位置end、蛋白质变体序列sequence、正反链strand、scanId、uniprot_id
@@ -154,18 +154,19 @@ void HttpService::initUrlRouting()
         this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
-    // http://localhost:12080/annotation/insert/Scan1053/65/2019-10-13 16:39:26/TEST
+    // http://localhost:12080/annotation/insert/
     // 在特定位置插入注释
-    // 输入： 参考序列名称/蛋白质变体scanId、位置、时间、内容
-    // 成功返回SUCCESS、失败返回FAIL
+    // 输入： 数据集ID、参考序列名称/蛋白质变体scanId、位置、时间、内容、作者
+    // 成功返回{status: 'SUCCESS'}、失败返回{status: 'FAIL'}
     //
-    this->snowHttpServer.route("/<arg>/annotation/insert/<arg>/<arg>/<arg>/<arg>", [this](quint16 datasetId, QString name, qint32 position, QString time, QString contents, const QHttpServerRequest &request, QHttpServerResponder &&responder){
-//        QByteArray value = request.value("Host");
-//        QUrl url = request.url();
-//        QVariantMap headers = request.headers();
-//        QByteArray body = request.body();
+    this->snowHttpServer.route("/annotation/insert", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder){
+        quint16 datasetId = request.query().queryItemValue("datasetId").toUInt();
+        QString name = request.query().queryItemValue("refName");
+        qint32 position = request.query().queryItemValue("position").toInt();
+        QString time = request.query().queryItemValue("time", QUrl::FullyDecoded);
         QString authorUsername = request.query().queryItemValue("author");
         QString remoteAddress = request.remoteAddress().toString();
+        QString contents = QString::fromUtf8(request.body());
 
         bool isInsertSuccess;
         try {
