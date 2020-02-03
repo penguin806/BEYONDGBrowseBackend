@@ -201,9 +201,12 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
     QSqlQuery query(this->databaseConnection);
 
 //    SELECT
+//        `id`,
 //        `name`,
 //        `position`,
 //        `time`,
+//        `author`,
+//        `ipaddress`,
 //        `contents`
 //    FROM
 //        `protein_comments`
@@ -214,7 +217,7 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
 //    name 	position 	time 	contents
 //    chr1 	149813270 	2019-07-28 17:49:36 	[{}, {}]
     QString queryString = QString(
-                "SELECT `name`, `position`, `time`, `contents` FROM `protein_comments` WHERE `dataset_id` = %4 AND `name` = '%1' AND `position` >= %2 AND `position` <= %3 ORDER BY `time` DESC")
+                "SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `dataset_id` = %4 AND `name` = '%1' AND `position` >= %2 AND `position` <= %3 ORDER BY `time` DESC")
             .arg(name, posStart, posEnd, QString::number(datasetId));
 
     bool bQueryResult = query.exec(queryString);
@@ -225,9 +228,12 @@ QJsonArray DatabaseQuery::queryAnnotationBySequenceRegion(
     while(query.next())
     {
         QJsonObject oneLineRecord;
+        oneLineRecord.insert("id",query.value("id").toInt());
         oneLineRecord.insert("name",query.value("name").toString());
         oneLineRecord.insert("position",query.value("position").toString());
         oneLineRecord.insert("time",query.value("time").toString());
+        oneLineRecord.insert("author",query.value("author").toString());
+        oneLineRecord.insert("ipaddress",query.value("ipaddress").toString());
         oneLineRecord.insert("contents",query.value("contents").toString());
 
         recordArray.push_back(oneLineRecord);
