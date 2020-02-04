@@ -355,30 +355,33 @@ QJsonArray DatabaseQuery::searchAnnotation(quint16 datasetId, qint32 id, QString
     }
 
     QSqlQuery query(this->databaseConnection);
+    QString queryString;
     if(id > 0)
     {
-        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `id` = :id ORDER BY `time` DESC");
-        query.bindValue(":id", id);
+        queryString = QString(
+                    "SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `id` = %1 ORDER BY `time` DESC")
+                .arg(id);
     }
     else if(!contents.isEmpty())
     {
-        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `contents` -> '$.ops' LIKE :contents ORDER BY `time` DESC");
-        query.bindValue(":contents", '%' + contents + '%');
+        queryString = QString(
+                    "SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `contents` -> '$.ops' LIKE '%1' ORDER BY `time` DESC")
+                .arg('%' + contents + '%');
     }
     else if(!authorUsername.isEmpty())
     {
-        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `author` = :author ORDER BY `time` DESC");
-        query.bindValue(":author", authorUsername);
+        queryString = QString(
+                    "SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `author` = '%1' ORDER BY `time` DESC")
+                .arg(authorUsername);
     }
     else
     {
-        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `ipaddress` = :ipaddress ORDER BY `time` DESC");
-        query.bindValue(":ipaddress", remoteAddress);
+        queryString = QString(
+                    "SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `ipaddress` = '%1' ORDER BY `time` DESC")
+                .arg(remoteAddress);
     }
 
-    bool bQueryResult = query.exec();
-    qDebug() << query.executedQuery() << "\n" << query.lastError().text();
-
+    bool bQueryResult = query.exec(queryString);
     qDebug() << "[Info] searchAnnotation: " << datasetId << id << contents
              << authorUsername << remoteAddress << bQueryResult << query.size() << query.lastError().text();
 
