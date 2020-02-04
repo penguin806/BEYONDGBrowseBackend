@@ -154,7 +154,7 @@ void HttpService::initUrlRouting()
         this->writeResponseData(responder, QJsonDocument(recordArray));
     });
 
-    // http://localhost:12080/annotation/insert/
+    // http://localhost:12080/annotation/insert
     // 在特定位置插入注释
     // 输入： 数据集ID、参考序列名称/蛋白质变体scanId、位置、时间、内容、作者
     // 成功返回{status: 'SUCCESS'}、失败返回{status: 'FAIL'}
@@ -230,6 +230,31 @@ void HttpService::initUrlRouting()
         } catch (QString errorReason) {
             errorReason = "[Warning] " + QString("/locate_autocomplete/%1 :")
                     .arg(proteinName) + errorReason;
+            qDebug() << errorReason.toUtf8().data();
+        }
+
+        this->writeResponseData(responder, QJsonDocument(recordArray));
+    });
+
+    // http://localhost:12080/annotation/search
+    // 查找注释
+    // 输入： 数据集ID、参考序列名称/蛋白质变体scanId、位置、时间、内容、作者
+    // 返回查找到的注释QJsonArray
+    //
+    this->snowHttpServer.route("/annotation/search", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder){
+        quint16 datasetId = request.query().queryItemValue("datasetId").toUInt();
+        qint32 id = request.query().queryItemValue("id").toInt();
+        QString authorUsername = request.query().queryItemValue("author");
+        QString remoteAddress = request.remoteAddress().toString();
+        QString contents = QString::fromUtf8(request.body());
+
+        QJsonArray recordArray;
+        try {
+            recordArray = this->searchAnnotation(datasetId, id, contents, authorUsername, remoteAddress);
+
+        } catch (QString errorReason) {
+            errorReason = "[Warning] " + QString("/annotation/search/%1/%2/%3/%4... :")
+                    .arg(QString::number(datasetId), QString::number(id), authorUsername, remoteAddress) + errorReason;
             qDebug() << errorReason.toUtf8().data();
         }
 
@@ -319,6 +344,28 @@ QJsonArray HttpService::queryProteinIdListForAutoComplete(quint16 datasetId, QSt
     }
     QJsonArray result = this->databaseQuery
             .queryProteinIdListForAutoComplete(datasetId, proteinName);
+
+    if(result.isEmpty())
+    {
+        throw QString("NOT_FOUND");
+    }
+    return result;
+}
+
+QJsonArray HttpService::searchAnnotation(quint16 datasetId, qint32 id, QString contents, QString authorUsername, QString remoteAddress)
+{
+    if(
+        (datasetId <= 0 || datasetId >= 5000) ||
+        (
+            id < 0 && contents.isEmpty() && authorUsername.isEmpty()
+            && remoteAddress.isEmpty()
+        )
+    )
+    {
+        throw QString("ERROR_QUERY_ARGUMENT_INVALID");
+    }
+    QJsonArray result = this->databaseQuery
+            .searchAnnotation(datasetId, id, contents, authorUsername, remoteAddress);
 
     if(result.isEmpty())
     {

@@ -24,6 +24,7 @@ protected:
     bool insertSequenceAnnotationAtSpecificPosition(quint16 datasetId, qint32 id, QString name, qint32 position, QString time, QString contents, QString authorUsername, QString remoteAddress);
     QJsonArray queryDatasetsList();
     QJsonArray queryProteinIdListForAutoComplete(quint16 datasetId, QString proteinName);
+    QJsonArray searchAnnotation(quint16 datasetId, qint32 id, QString contents, QString authorUsername, QString remoteAddress);
 
 private:
     QHttpServer snowHttpServer;

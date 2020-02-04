@@ -345,3 +345,57 @@ QJsonArray DatabaseQuery::queryProteinIdListForAutoComplete(quint16 datasetId, Q
 
     return recordArray;
 }
+
+// 按ID或内容、作者、IP地址查询注释
+QJsonArray DatabaseQuery::searchAnnotation(quint16 datasetId, qint32 id, QString contents, QString authorUsername, QString remoteAddress)
+{
+    if(!this->databaseConnection.isOpen())
+    {
+        throw QString("ERROR_DATABASE_CLOSED");
+    }
+
+    QSqlQuery query(this->databaseConnection);
+    if(id > 0)
+    {
+        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `id` = :id ORDER BY `time` DESC");
+        query.bindValue(":id", id);
+    }
+    else if(!contents.isEmpty())
+    {
+        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `contents` -> '$.ops' LIKE :contents ORDER BY `time` DESC");
+        query.bindValue(":contents", '%' + contents + '%');
+    }
+    else if(!authorUsername.isEmpty())
+    {
+        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `author` = :author ORDER BY `time` DESC");
+        query.bindValue(":author", authorUsername);
+    }
+    else
+    {
+        query.prepare("SELECT `id`, `name`, `position`, `time`, `author`, `ipaddress`, `contents` FROM `protein_comments` WHERE `ipaddress` = :ipaddress ORDER BY `time` DESC");
+        query.bindValue(":ipaddress", remoteAddress);
+    }
+
+    bool bQueryResult = query.exec();
+    qDebug() << query.executedQuery() << "\n" << query.lastError().text();
+
+    qDebug() << "[Info] searchAnnotation: " << datasetId << id << contents
+             << authorUsername << remoteAddress << bQueryResult << query.size() << query.lastError().text();
+
+    QJsonArray recordArray;
+    while(query.next())
+    {
+        QJsonObject oneLineRecord;
+        oneLineRecord.insert("id",query.value("id").toInt());
+        oneLineRecord.insert("name",query.value("name").toString());
+        oneLineRecord.insert("position",query.value("position").toString());
+        oneLineRecord.insert("time",query.value("time").toString());
+        oneLineRecord.insert("author",query.value("author").toString());
+        oneLineRecord.insert("ipaddress",query.value("ipaddress").toString());
+        oneLineRecord.insert("contents",query.value("contents").toString());
+
+        recordArray.push_back(oneLineRecord);
+    }
+
+    return recordArray;
+}
