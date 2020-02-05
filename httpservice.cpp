@@ -245,7 +245,7 @@ void HttpService::initUrlRouting()
         quint16 datasetId = request.query().queryItemValue("datasetId").toUInt();
         qint32 id = request.query().queryItemValue("id").toInt();
         QString authorUsername = request.query().queryItemValue("author");
-        QString remoteAddress = request.remoteAddress().toString();
+        QString remoteAddress = request.query().queryItemValue("ipaddress");
         QString contents = QString::fromUtf8(request.body());
 
         QJsonArray recordArray;
