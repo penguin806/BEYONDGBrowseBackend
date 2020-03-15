@@ -120,6 +120,11 @@ ORDER BY\
     qDebug() << "[Info] queryProteinBySequenceRegion: "
              << datasetId << name << posStart << posEnd << bQueryResult << query.size();
 
+    if(!bQueryResult)
+    {
+        qDebug() << "[Error] queryProteinBySequenceRegion: " + query.lastError().text();
+    }
+
     QJsonArray recordArray;
     while(query.next())
     {
