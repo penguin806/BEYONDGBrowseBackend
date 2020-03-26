@@ -61,6 +61,10 @@ void HttpService::writeResponseData(QHttpServerResponder &responder, const QJson
         std::pair<QByteArray, QByteArray>(
             QByteArrayLiteral("Access-Control-Allow-Methods"),
             QByteArrayLiteral("GET, POST")
+        ),
+        std::pair<QByteArray, QByteArray>(
+            QByteArrayLiteral("Access-Control-Allow-Headers"),
+            QByteArrayLiteral("X-Requested-With")
         )
     };
     responder.write(document, headerList);
