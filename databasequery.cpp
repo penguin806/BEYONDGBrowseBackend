@@ -69,54 +69,102 @@ QJsonArray DatabaseQuery::queryProteinBySequenceRegion(quint16 datasetId, QStrin
 // 149813271 	149813681 	H32_HUMAN 	1036 	A.(RTKQTARKSTGGKAPRKQLATKAARKSAPATG)[Acetyl]GVKKPH...
 // 149813271 	149813681 	H32_HUMAN 	1041 	M.ARTKQTA(RKSTG)[Acetyl](GKAPRK)[Acetyl]QLAT(KAARK...
 
-    QString queryString = QString(
-"\
-SELECT\
-    `start`,\
-    `end`,\
-    `strand`,\
-    `uniprot_id`,\
-    `ensembl_id`,\
-    `Scan(s)`,\
-    `ions`,\
-    `proteoform`\
-FROM\
-    (\
-    SELECT\
-        `start`,\
-        `end`,\
-        `strand`,\
-        `uniprot_id`,\
-        `ensembl_id`\
-    FROM\
-        `protein_annotation`\
-    WHERE\
-        `dataset_id` = %4 AND (\
-            `name` = '%1' AND `start` >= '%2' AND `end` <= '%3'\
-        ) OR(\
-            `name` = '%1' AND `start` < '%2' AND `end` > '%2'\
-        ) OR(\
-            `name` = '%1' AND `start` < '%3' AND `end` > '%3'\
-        ) OR(\
-            `name` = '%1' AND `start` < '%2' AND `end` > '%3'\
-        )\
-    GROUP BY\
-        `uniprot_id`\
-) AS `id_list`,\
-`protein_sequence`,\
-`protein_scan` \
-WHERE\
-    `protein_scan`.`dataset_id` = %4 AND `protein_sequence`.`dataset_id` = %4 AND `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`\
-ORDER BY\
-    `start`,\
-    `Scan(s)`\
-"
-    ).arg(
-                name, posStart, posEnd, QString::number(datasetId)
-         );
+//    QString queryString = QString(
+//"\
+//SELECT\
+//    `start`,\
+//    `end`,\
+//    `strand`,\
+//    `uniprot_id`,\
+//    `ensembl_id`,\
+//    `Scan(s)`,\
+//    `ions`,\
+//    `proteoform`\
+//FROM\
+//    (\
+//    SELECT\
+//        `start`,\
+//        `end`,\
+//        `strand`,\
+//        `uniprot_id`,\
+//        `ensembl_id`\
+//    FROM\
+//        `protein_annotation`\
+//    WHERE\
+//        `dataset_id` = %4 AND (\
+//            `name` = '%1' AND `start` >= '%2' AND `end` <= '%3'\
+//        ) OR(\
+//            `name` = '%1' AND `start` < '%2' AND `end` > '%2'\
+//        ) OR(\
+//            `name` = '%1' AND `start` < '%3' AND `end` > '%3'\
+//        ) OR(\
+//            `name` = '%1' AND `start` < '%2' AND `end` > '%3'\
+//        )\
+//    GROUP BY\
+//        `uniprot_id`\
+//) AS `id_list`,\
+//`protein_sequence`,\
+//`protein_scan` \
+//WHERE\
+//    `protein_scan`.`dataset_id` = %4 AND `protein_sequence`.`dataset_id` = %4 AND `uniprot_id` = `Protein accession` AND `Scan(s)` = `scan_id`\
+//ORDER BY\
+//    `start`,\
+//    `Scan(s)`\
+//"
+//    ).arg(
+//                name, posStart, posEnd, QString::number(datasetId)
+//         );
 
+// 2020-05-24 SQL:
+//    SELECT
+//        `start`,
+//        `end`,
+//        `strand`,
+//        `uniprot_id`,
+//        `ensembl_id`,
+//        `Scan(s)`,
+//        `ions`,
+//        `proteoform`
+//    FROM
+//        (
+//        SELECT
+//            `start`,
+//            `end`,
+//            `strand`,
+//            `uniprot_id`,
+//            `ensembl_id`
+//        FROM
+//            `protein_annotation`
+//        WHERE
+//            `dataset_id` = 1 AND(
+//                `name` = 'chr11' AND `start` >= '67303480' AND `end` <= '67312602'
+//            ) OR(
+//                `name` = 'chr11' AND `start` < '67303480' AND `end` > '67303480'
+//            ) OR(
+//                `name` = 'chr11' AND `start` < '67312602' AND `end` > '67312602'
+//            ) OR(
+//                `name` = 'chr11' AND `start` < '67303480' AND `end` > '67312602'
+//            )
+//        GROUP BY
+//            `uniprot_id`
+//    ) AS `id_list`,
+//    `protein_sequence` AS seq_table
+//    LEFT JOIN `protein_scan` AS scan_table
+//    ON
+//        `seq_table`.`Scan(s)` = `scan_table`.`scan_id` AND `scan_table`.`dataset_id` = 1
+//    WHERE
+//        `seq_table`.`dataset_id` = 1 AND `uniprot_id` = `Protein accession`
+//    ORDER BY
+//        `start`,
+//        `Scan(s)`
 
-    bool bQueryResult = query.exec(queryString);
+    query.prepare("SELECT `start`, `end`, `strand`, `uniprot_id`, `ensembl_id`, `Scan(s)`, `ions`, `proteoform` FROM ( SELECT `start`, `end`, `strand`, `uniprot_id`, `ensembl_id` FROM `protein_annotation` WHERE `dataset_id` = :dataset_id AND( `name` = :name AND `start` >= :start_pos AND `end` <= :end_pos ) OR( `name` = :name AND `start` < :start_pos AND `end` > :start_pos ) OR( `name` = :name AND `start` < :end_pos AND `end` > :end_pos ) OR( `name` = :name AND `start` < :start_pos AND `end` > :end_pos ) GROUP BY `uniprot_id` ) AS `id_list`, `protein_sequence` AS seq_table LEFT JOIN `protein_scan` AS scan_table ON `seq_table`.`Scan(s)` = `scan_table`.`scan_id` AND `scan_table`.`dataset_id` = :dataset_id WHERE `seq_table`.`dataset_id` = :dataset_id AND `uniprot_id` = `Protein accession` ORDER BY `start`, `Scan(s)`");
+    query.bindValue(":dataset_id", QString::number(datasetId));
+    query.bindValue(":name", name);
+    query.bindValue(":start_pos", posStart);
+    query.bindValue(":end_pos", posEnd);
+    bool bQueryResult = query.exec();
+
     qDebug() << "[Info] queryProteinBySequenceRegion: "
              << datasetId << name << posStart << posEnd << bQueryResult << query.size();
 
